@@ -39,50 +39,51 @@ public class MainCep {
 				op = x.charAt(0);
 				switch (op) {
 				case '1':
-					existe = false;
-					System.out.print("Digite o CEP: ");
-					String cep = sc.nextLine();
-					if (cont < max) {
-						if (cep.length() != 8 || !cep.chars().allMatch(Character::isDigit)) {
-							System.out.println("Digite um Cep válido de 8 numeros");
-							break;
-						}
-
-						if (repo.buscar(cep) != null) {
-							existe = true;
-							repo.atualizar(cep);
-							break;
-						}
-						if (!existe) {
-							Cep c = service.buscar(cep);
-							if (c != null) {
-								repo.salvar(c);
-								System.out.println("Cidade: " + c.getCidade() + ", Estado: " + c.getEstado()
-										+ ", Logradouro: " + c.getLogradouro() + ", Complemento: " + c.getComplemento()
-										+ ", Bairro: " + c.getBairro() + ", UF: " + c.getUF() + ", Região: "
-										+ c.getRegiao() + ", DDD: " + c.getDDD());
-								cont++;
-							} else {
-								System.out.println("Cep inexistente");
-							}
-						} else {
-							ultimo = repo.ultimo();
-							if (ultimo.getCodigo().equals(cep)) {
-								System.out.println("Cep já consultado");
-							} else {
-								Cep z = repo.buscar(cep);
-								System.out.println("Cidade: " + z.getCidade() + ", Estado: " + z.getEstado()
-										+ ", Logradouro: " + z.getLogradouro() + ", Complemento: " + z.getComplemento()
-										+ ", Bairro: " + z.getBairro() + ", UF: " + z.getUF() + ", Região: "
-										+ z.getRegiao() + ", DDD: " + z.getDDD());
-								cont++;
-							}
-						}
-					} else {
-						System.out.println("Máximo de consultas atingido.");
-					}
-
-					break;
+				    existe = false;
+				    System.out.print("Digite o CEP: ");
+				    String cep = sc.nextLine();
+				    
+				    if (cont < max) {
+				        if (cep.length() != 8 || !cep.chars().allMatch(Character::isDigit)) {
+				            System.out.println("Digite um Cep válido de 8 numeros");
+				            break;
+				        }
+				        Cep ultimo = repo.ultimo(); 
+				        Cep noBanco = repo.buscar(cep);
+				        
+				        if (noBanco != null) {
+				            existe = true;
+				            repo.atualizar(cep); 
+				        }
+				        
+				        if (!existe) {
+				            Cep c = service.buscar(cep);
+				            System.out.println("Retorno do service: " + c);
+				            if (c != null) {
+				                repo.salvar(c);
+				                System.out.println("Cidade: " + c.getCidade() + ", Estado: " + c.getEstado()
+				                        + ", Logradouro: " + c.getLogradouro() + ", Complemento: " + c.getComplemento()
+				                        + ", Bairro: " + c.getBairro() + ", UF: " + c.getUF() + ", Região: "
+				                        + c.getRegiao() + ", DDD: " + c.getDDD());
+				                cont++;
+				            } else {
+				                System.out.println("Cep inexistente");
+				            }
+				        } else {
+				            if (ultimo != null && ultimo.getCodigo().equals(cep)) {
+				                System.out.println("Cep já consultado");
+				            } else {
+				                System.out.println("Cidade: " + noBanco.getCidade() + ", Estado: " + noBanco.getEstado()
+				                        + ", Logradouro: " + noBanco.getLogradouro() + ", Complemento: " + noBanco.getComplemento()
+				                        + ", Bairro: " + noBanco.getBairro() + ", UF: " + noBanco.getUF() + ", Região: "
+				                        + noBanco.getRegiao() + ", DDD: " + noBanco.getDDD());
+				                cont++;
+				            }
+				        }
+				    } else {
+				        System.out.println("Máximo de consultas atingido.");
+				    }
+				    break;
 				case '2':
 					System.out.println("Escolha a ordenação desejada para a lista.");
 					System.out.println("\n1 - Consultas recentes");
@@ -101,24 +102,22 @@ public class MainCep {
 						System.out.println("A ultima consulta feita foi pelo CEP " + ultimo.getCodigo() + " de "
 								+ ultimo.getCidade());
 					}
+					break;
 
 				case '3':
 					System.out.print("Digite o CEP para buscar: ");
 					String busca = sc.nextLine();
 
-					boolean encontrado = false;
-
-					for (Cep c1 : repo.listar()) {
-						if (c1.getCodigo().equals(busca)) {
-							System.out.println(c1.getCodigo() + " - " + "Cidade: " + c1.getCidade() + ", Estado: "
-									+ c1.getEstado() + ", Logradouro: " + c1.getLogradouro() + ", Complemento: "
-									+ c1.getComplemento() + ", Bairro: " + c1.getBairro() + ", UF: " + c1.getUF()
-									+ ", Região: " + c1.getRegiao() + ", DDD: " + c1.getDDD());
-							encontrado = true;
-						}
-					}
-
-					if (!encontrado) {
+					Cep c1 = repo.buscar(busca);
+					
+					if (c1 != null)
+					{
+						System.out.println(c1.getCodigo() + " - " + "Cidade: " + c1.getCidade() + ", Estado: "
+								+ c1.getEstado() + ", Logradouro: " + c1.getLogradouro() + ", Complemento: "
+								+ c1.getComplemento() + ", Bairro: " + c1.getBairro() + ", UF: " + c1.getUF()
+								+ ", Região: " + c1.getRegiao() + ", DDD: " + c1.getDDD());
+					}else
+					{
 						System.out.println("CEP não encontrado no histórico.");
 					}
 
@@ -128,15 +127,12 @@ public class MainCep {
 					System.out.print("Digite o CEP para apagar: ");
 					String apagar = sc.nextLine();
 
-					boolean removido = repo.listar().removeIf(c -> c.getCodigo().equals(apagar));
-
-					if (removido) {
-						cont--;
-						if (ultimo.getCodigo().equals(apagar)) {
-							ultimo = null;
-						}
+					Cep c2 = repo.buscar(apagar);
+					if (c2!=null)
+					{
+						repo.apagar(apagar);
 						System.out.println("CEP removido do histórico.");
-					} else {
+					}else {
 						System.out.println("CEP não encontrado no histórico.");
 					}
 

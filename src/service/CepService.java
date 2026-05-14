@@ -33,7 +33,7 @@ public class CepService {
             if(erro == true) {
             	return null;
             }else {
-            	return new Cep(cep, cidade, estado, logradouro, complemento, bairro, UF, regiao, DDD);
+            	return new Cep(cep, cidade, estado, logradouro, complemento, bairro, UF, regiao, DDD, 1, null);
             }
 
         } catch (Exception e) {

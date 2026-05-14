@@ -6,6 +6,7 @@ import util.ConnectionFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Repository {
 
@@ -37,29 +38,34 @@ public class Repository {
     }
     
     public Cep buscar(String cep) {
-    	String sql = "SELECT * from cep WHERE codigo = ?";
-    	Cep ultimo = null;
+        String sql = "SELECT * FROM cep WHERE codigo = ?";
+        Cep ultimo = null;
 
         try (
             Connection conn = ConnectionFactory.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);            
+            PreparedStatement ps = conn.prepareStatement(sql);
         ) {
-        	ps.setString(1, cep);
-        	ResultSet rs = ps.executeQuery();
-        	ultimo = new Cep(rs.getString("codigo"), 
-        			rs.getString("cidade"), 
-        			rs.getString("estado"),
-    			    rs.getString("logradouro"),
-    			    rs.getString("complemento"),
-    			    rs.getString("bairro"),
-    			    rs.getString("UF"),
-    			    rs.getString("regiao"),
-    			    rs.getString("DDD"),
-    			    rs.getInt("cont"),
-    			    rs.getTimestamp("horario"));
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            ps.setString(1, cep);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ultimo = new Cep(
+                        rs.getString("codigo"), 
+                        rs.getString("cidade"), 
+                        rs.getString("estado"),
+                        rs.getString("logradouro"),
+                        rs.getString("complemento"),
+                        rs.getString("bairro"),
+                        rs.getString("UF"),
+                        rs.getString("regiao"),
+                        rs.getString("DDD"),
+                        rs.getInt("cont"),
+                        rs.getTimestamp("horario")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar CEP: " + e.getMessage());
         }
         
         return ultimo;
@@ -68,6 +74,24 @@ public class Repository {
     public void atualizar(String cep) {
     	String sql =
                 "UPDATE cep set cont = cont + 1, horario = CURRENT_TIMESTAMP WHERE codigo = ?";
+
+            try (
+                Connection conn = ConnectionFactory.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)
+            ) {
+
+                ps.setString(1, cep);
+
+                ps.execute();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+    
+    public void apagar(String cep) {
+    	String sql =
+                "DELETE FROM cep WHERE codigo = ?";
 
             try (
                 Connection conn = ConnectionFactory.getConnection();
@@ -134,17 +158,22 @@ public class Repository {
             PreparedStatement ps = conn.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
         ) {
-        	ultimo = new Cep(rs.getString("codigo"), 
-        			rs.getString("cidade"), 
-        			rs.getString("estado"),
-    			    rs.getString("logradouro"),
-    			    rs.getString("complemento"),
-    			    rs.getString("bairro"),
-    			    rs.getString("UF"),
-    			    rs.getString("regiao"),
-    			    rs.getString("DDD"),
-    			    rs.getInt("cont"),
-    			    rs.getTimestamp("horario"));
+        	if (rs.next()) {
+        		ultimo = new Cep(rs.getString("codigo"), 
+            			rs.getString("cidade"), 
+            			rs.getString("estado"),
+        			    rs.getString("logradouro"),
+        			    rs.getString("complemento"),
+        			    rs.getString("bairro"),
+        			    rs.getString("UF"),
+        			    rs.getString("regiao"),
+        			    rs.getString("DDD"),
+        			    rs.getInt("cont"),
+        			    rs.getTimestamp("horario"));
+        	} else {
+        	    System.out.println("Nenhum registro encontrado!");
+        	}
+        	
         	
         } catch (Exception e) {
             e.printStackTrace();
