@@ -48,7 +48,7 @@ public class MainCep {
 				            System.out.println("Digite um Cep válido de 8 numeros");
 				            break;
 				        }
-				        Cep ultimo = repo.ultimo(); 
+				        ultimo = repo.ultimo(); 
 				        Cep noBanco = repo.buscar(cep);
 				        
 				        if (noBanco != null) {
@@ -58,7 +58,6 @@ public class MainCep {
 				        
 				        if (!existe) {
 				            Cep c = service.buscar(cep);
-				            System.out.println("Retorno do service: " + c);
 				            if (c != null) {
 				                repo.salvar(c);
 				                System.out.println("Cidade: " + c.getCidade() + ", Estado: " + c.getEstado()
@@ -87,21 +86,22 @@ public class MainCep {
 				case '2':
 					System.out.println("Escolha a ordenação desejada para a lista.");
 					System.out.println("\n1 - Consultas recentes");
-					System.out.println("\n2 - Ordem original");
-					System.out.println("\n3 - Mais consultados");
+					System.out.println("\n2 - Mais consultados");
 					opL = sc.nextInt();
-					if (opL != 1 && opL != 2 && opL != 3) {
+					if (opL != 1 && opL != 2) {
 						System.out.println("Valor inválido, tente novamente");
 						break;
 					} else {
 						repo.listar(opL);
 					}
-					//Atualizar a partir daqui
-					System.out.println("Foram feitas " + cont + " consultas bem sucedidas.");
+					System.out.println("Foram feitas " + repo.cont() + " consultas bem sucedidas.");
+					System.out.println("O CEP mais consultado é " + repo.maisConsultdo().getCodigo());
+					ultimo = repo.ultimo();
 					if (ultimo != null) {
 						System.out.println("A ultima consulta feita foi pelo CEP " + ultimo.getCodigo() + " de "
 								+ ultimo.getCidade());
 					}
+					sc.nextLine();
 					break;
 
 				case '3':
