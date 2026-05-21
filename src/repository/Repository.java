@@ -83,6 +83,55 @@ public class Repository {
         return ultimo;
     }
     
+    public List<Cep> buscarPorEndereco(String uf, String cidade, String logradouro, Usuario u) {
+
+        String sql = "SELECT * FROM cep " +
+                     "WHERE fk_id_usuario = ? " +
+                     "AND UF = ? " +
+                     "AND cidade LIKE ? " +
+                     "AND logradouro LIKE ?";
+
+        List<Cep> lista = new ArrayList<>();
+
+        try (
+            Connection conn = ConnectionFactory.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql);
+        ) {
+
+            ps.setInt(1, u.getId());
+            ps.setString(2, uf);
+            ps.setString(3, "%" + cidade + "%");
+            ps.setString(4, "%" + logradouro + "%");
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+
+                    Cep cep = new Cep(
+                        rs.getString("codigo"),
+                        rs.getString("cidade"),
+                        rs.getString("estado"),
+                        rs.getString("logradouro"),
+                        rs.getString("complemento"),
+                        rs.getString("bairro"),
+                        rs.getString("UF"),
+                        rs.getString("regiao"),
+                        rs.getString("DDD"),
+                        rs.getInt("cont"),
+                        rs.getTimestamp("horario")
+                    );
+
+                    lista.add(cep);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar endereço: " + e.getMessage());
+        }
+
+        return lista;
+    }
+    
     public void listar(int op, Usuario u) {
     	String sql = "";
     	switch(op) {
@@ -496,6 +545,55 @@ public class Repository {
     	} catch (Exception e) {
     		System.err.println("Erro ao editar favorito: " + e.getMessage());
     	}
+    }
+    
+    //Filtro por categoria
+    public void listarFavoritosPorCategoria(int idCategoria, Usuario u) {
+        String sql =
+            "SELECT f.id_favorito, f.codigo, f.nome AS nome_favorito, " +
+            "c.cidade, c.estado, c.logradouro, c.bairro, c.UF, c.regiao, c.DDD, " +
+            "cat.nome AS categoria " +
+            "FROM favoritos f " +
+            "INNER JOIN cep c ON f.fk_id_usuario = c.fk_id_usuario AND f.codigo = c.codigo " +
+            "INNER JOIN categoria_favoritos cf ON f.id_favorito = cf.fk_id_favorito " +
+            "INNER JOIN categorias cat ON cf.fk_id_categoria = cat.id_categoria " +
+            "WHERE f.fk_id_usuario = ? AND cat.id_categoria = ?";
+
+        try (
+            Connection conn = ConnectionFactory.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+            ps.setInt(1, u.getId());
+            ps.setInt(2, idCategoria);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean encontrou = false;
+
+                while (rs.next()) {
+                    encontrou = true;
+
+                    System.out.println(
+                        rs.getString("codigo") +
+                        " - Nome: " + rs.getString("nome_favorito") +
+                        ", Cidade: " + rs.getString("cidade") +
+                        ", Estado: " + rs.getString("estado") +
+                        ", Logradouro: " + rs.getString("logradouro") +
+                        ", Bairro: " + rs.getString("bairro") +
+                        ", UF: " + rs.getString("UF") +
+                        ", Região: " + rs.getString("regiao") +
+                        ", DDD: " + rs.getString("DDD") +
+                        ", Categoria: " + rs.getString("categoria")
+                    );
+                }
+
+                if (!encontrou) {
+                    System.out.println("Nenhum favorito encontrado nesta categoria.");
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     //CRUD CATEGORIAS

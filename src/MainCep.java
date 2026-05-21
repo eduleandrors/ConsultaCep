@@ -24,7 +24,7 @@ public class MainCep {
 		CepService service = new CepService();
 		Repository repo = new Repository();
 		char op, op2 = '4';
-		String x, y;
+		String x, y, ultimoEndereco = "";
 		boolean existe = false;
 		Cep ultimo = null;
 		int max = 20, cont = 0, maxh = 15, opL;
@@ -67,15 +67,16 @@ public class MainCep {
 						do {
 
 							System.out.println("\n1 - Consultar CEP");
-							System.out.println("2 - Listar histórico de pesquisa");
-							System.out.println("3 - Pesquisar dentro do histórico");
-							System.out.println("4 - Deletar consulta");
-							System.out.println("5 - Limpar histórico");
-							System.out.println("6 - Favoritos");
+							System.out.println("2 - Consultar endereço");
+							System.out.println("3 - Listar histórico de pesquisa");
+							System.out.println("4 - Pesquisar dentro do histórico");
+							System.out.println("5 - Deletar consulta");
+							System.out.println("6 - Limpar histórico");
+							System.out.println("7 - Favoritos");
 							System.out.println("0 - Sair");
 
 							x = sc.nextLine();
-							if (!x.equals("1") && !x.equals("2") && !x.equals("0") && !x.equals("3") && !x.equals("4") && !x.equals("5") && !x.equals("6")) {
+							if (!x.equals("1") && !x.equals("2") && !x.equals("0") && !x.equals("3") && !x.equals("4") && !x.equals("5") && !x.equals("6") && !x.equals("7")) {
 								System.out.println("Valor inválido, tente novamente");
 								op = 1;
 							} else {
@@ -127,6 +128,102 @@ public class MainCep {
 								    }
 								    break;
 								case '2':
+
+								    System.out.print("UF: ");
+								    String uf = sc.nextLine();
+
+								    System.out.print("Cidade: ");
+								    String cidade = sc.nextLine();
+
+								    System.out.print("Logradouro: ");
+								    String logradouro = sc.nextLine();
+
+								    if (cont >= max) {
+								        System.out.println("Máximo de consultas atingido.");
+								        break;
+								    }
+
+								    if (logradouro.length() < 3) {
+								        System.out.println(
+								            "Digite um logradouro válido de no mínimo 3 caracteres");
+								        break;
+								    }
+								    
+								    String pesquisaAtual = uf.toUpperCase().trim() + "|" + cidade.toUpperCase().trim() + "|" + logradouro.toUpperCase().trim();
+								    if (pesquisaAtual.equals(ultimoEndereco)) {
+								        System.out.println(
+								            "Este endereço já foi consultado na última pesquisa.");
+								        break;
+								    }
+
+								    List<Cep> dadosBanco = repo.buscarPorEndereco(uf, cidade, logradouro, logado);
+
+								    if (!dadosBanco.isEmpty()) {
+
+								        System.out.println(
+								            "Resultados encontrados no histórico:");
+
+								        for (Cep c : dadosBanco) {
+
+								            repo.atualizar(c.getCodigo(), logado);
+
+								            System.out.println(
+								                "Cidade: " + c.getCidade() +
+								                ", Estado: " + c.getEstado() +
+								                ", Logradouro: " + c.getLogradouro() +
+								                ", Complemento: " + c.getComplemento() +
+								                ", Bairro: " + c.getBairro() +
+								                ", UF: " + c.getUF() +
+								                ", Região: " + c.getRegiao() +
+								                ", DDD: " + c.getDDD()
+								            );
+								        }
+
+								    } else {
+
+								        List<Cep> resultados =
+								            service.buscarPorEndereco(
+								                uf, cidade, logradouro);
+
+								        if (resultados == null || resultados.isEmpty()) {
+
+								            System.out.println("Endereço inexistente");
+
+								        } else {
+
+								            System.out.println(
+								                "Resultados encontrados:");
+
+								            for (Cep c : resultados) {
+
+								                Cep noBanco = repo.buscar(c.getCodigo(), logado);
+
+								                if (noBanco == null) {
+								                    repo.salvar(c, logado);
+								                } else {
+								                    repo.atualizar(
+								                        c.getCodigo(), logado);
+								                }
+
+								                System.out.println(
+								                    "Cidade: " + c.getCidade() +
+								                    ", Estado: " + c.getEstado() +
+								                    ", Logradouro: " + c.getLogradouro() +
+								                    ", Complemento: " + c.getComplemento() +
+								                    ", Bairro: " + c.getBairro() +
+								                    ", UF: " + c.getUF() +
+								                    ", Região: " + c.getRegiao() +
+								                    ", DDD: " + c.getDDD()
+								                );
+								            }
+
+								            cont = repo.cont(logado);
+								        }
+								    }
+								    ultimoEndereco = pesquisaAtual;
+
+								    break;
+								case '3':
 								    System.out.println("Escolha a ordenação desejada para a lista.");
 								    System.out.println("\n1 - Consultas recentes");
 								    System.out.println("\n2 - Ordem original");
@@ -149,7 +246,7 @@ public class MainCep {
 								                + ultimo.getCidade());
 								    }
 								    break;
-								case '3':
+								case '4':
 									System.out.print("Digite o CEP para buscar: ");
 									String busca = sc.nextLine();
 
@@ -168,7 +265,7 @@ public class MainCep {
 
 									break;
 
-								case '4':
+								case '5':
 									System.out.print("Digite o CEP para apagar: ");
 									String apagar = sc.nextLine();
 
@@ -183,25 +280,26 @@ public class MainCep {
 
 									break;
 								
-								case '5':
+								case '6':
 									repo.limparHistórico(logado);
 								break;
-							case '6':
+							case '7':
 								char opFav;
 								do {
 									System.out.println("\n=== Favoritos ===");
 									System.out.println("1 - Listar favoritos");
-									System.out.println("2 - Adicionar favorito");
-									System.out.println("3 - Excluir favorito");
-									System.out.println("4 - Editar nome de favorito");
-									System.out.println("5 - Criar categoria");
-									System.out.println("6 - Listar categorias");
-									System.out.println("7 - Editar categoria");
-									System.out.println("8 - Excluir categoria");
+									System.out.println("2 - Listar favoritos por categoria");
+									System.out.println("3 - Adicionar favorito");
+									System.out.println("4 - Excluir favorito");
+									System.out.println("5 - Editar nome de favorito");
+									System.out.println("6 - Criar categoria");
+									System.out.println("7 - Listar categorias");
+									System.out.println("8 - Editar categoria");
+									System.out.println("9 - Excluir categoria");
 									System.out.println("0 - Voltar");
 
 									String entradaFav = sc.nextLine();
-									if (entradaFav.length() != 1 || "012345678".indexOf(entradaFav.charAt(0)) == -1) {
+									if (entradaFav.length() != 1 || "0123456789".indexOf(entradaFav.charAt(0)) == -1) {
 										System.out.println("Valor inválido, tente novamente");
 										opFav = 1;
 									} else {
@@ -210,8 +308,28 @@ public class MainCep {
 										case '1': // Listar favoritos
 											repo.listarFavoritos(logado);
 											break;
+											
+										case '2': // Filtrar favoritos por categoria
+											System.out.print("Digite o ID da categoria: ");
+										    String idCatFiltro = sc.nextLine();
 
-										case '2': // Adicionar favorito
+										    try {
+										        int idFiltro = Integer.parseInt(idCatFiltro);
+
+										        Categoria catFiltro = repo.buscarCategoria(idFiltro, logado);
+
+										        if (catFiltro != null) {
+										            repo.listarFavoritosPorCategoria(idFiltro, logado);
+										        } else {
+										            System.out.println("Categoria não encontrada.");
+										        }
+
+										    } catch (NumberFormatException ex) {
+										        System.out.println("ID inválido.");
+										    }
+											break;
+
+										case '3': // Adicionar favorito
 											System.out.print("Digite o código do CEP para favoritar: ");
 											String cepFav = sc.nextLine();
 
@@ -260,7 +378,7 @@ public class MainCep {
 											}
 											break;
 
-										case '3': // Excluir favorito
+										case '4': // Excluir favorito
 											repo.listarFavoritos(logado);
 											System.out.print("Digite o código do CEP para remover dos favoritos: ");
 											String cepExcluir = sc.nextLine();
@@ -272,7 +390,7 @@ public class MainCep {
 											}
 											break;
 
-										case '4': // Editar nome de favorito
+										case '5': // Editar nome de favorito
 											repo.listarFavoritos(logado);
 											System.out.print("Digite o código do CEP do favorito para editar: ");
 											String cepEditar = sc.nextLine();
@@ -286,17 +404,17 @@ public class MainCep {
 											}
 											break;
 
-										case '5': // Criar categoria
+										case '6': // Criar categoria
 											System.out.print("Digite o nome da nova categoria: ");
 											String nomeCat = sc.nextLine();
 											repo.salvarCategoria(nomeCat, logado);
 											break;
 
-										case '6': // Listar categorias
+										case '7': // Listar categorias
 											repo.listarCategorias(logado);
 											break;
 
-										case '7': // Editar categoria
+										case '8': // Editar categoria
 											repo.listarCategorias(logado);
 											System.out.print("Digite o ID da categoria para editar: ");
 											String idEditStr = sc.nextLine();
@@ -315,7 +433,7 @@ public class MainCep {
 											}
 											break;
 
-										case '8': // Excluir categoria
+										case '9': // Excluir categoria
 											repo.listarCategorias(logado);
 											System.out.print("Digite o ID da categoria para excluir: ");
 											String idExcStr = sc.nextLine();
