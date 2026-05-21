@@ -1,6 +1,8 @@
 package repository;
 
 import model.Cep;
+import model.Categoria;
+import model.Favorito;
 import model.Usuario;
 import util.ConnectionFactory;
 import util.Util;
@@ -10,6 +12,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Repository {
 	
@@ -356,5 +360,266 @@ public class Repository {
                 return false;
     }
     
+    //CRUD FAVORITOS
     
-}
+    public void salvarFavorito(String codigo, String nome, Usuario u) {
+    	String sql = "INSERT INTO favoritos (fk_id_usuario, codigo, nome) VALUES (?, ?, ?)";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, u.getId());
+    		ps.setString(2, codigo);
+    		ps.setString(3, nome);
+    		ps.execute();
+    		System.out.println("Favorito salvo com sucesso!");
+    	} catch (Exception e) {
+    		System.err.println("Erro ao salvar favorito: " + e.getMessage());
+    	}
+    }
+    
+    public void listarFavoritos(Usuario u) {
+    	String sql = "SELECT f.id_favorito, f.codigo, f.nome AS nome_favorito, " +
+    			"c.cidade, c.estado, c.logradouro, c.bairro, c.UF, c.regiao, c.DDD " +
+    			"FROM favoritos f " +
+    			"INNER JOIN cep c ON f.fk_id_usuario = c.fk_id_usuario AND f.codigo = c.codigo " +
+    			"WHERE f.fk_id_usuario = ?";
+    	
+    	String sqlCat = "SELECT cat.nome FROM categoria_favoritos cf " +
+    			"INNER JOIN categorias cat ON cf.fk_id_categoria = cat.id_categoria " +
+    			"WHERE cf.fk_id_favorito = ?";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, u.getId());
+    		
+    		try (ResultSet rs = ps.executeQuery()) {
+    			boolean encontrou = false;
+    			while (rs.next()) {
+    				encontrou = true;
+    				int idFav = rs.getInt("id_favorito");
+    				System.out.println(
+    					rs.getString("codigo") +
+    					" - Nome: " + rs.getString("nome_favorito") +
+    					", Cidade: " + rs.getString("cidade") +
+    					", Estado: " + rs.getString("estado") +
+    					", Logradouro: " + rs.getString("logradouro") +
+    					", Bairro: " + rs.getString("bairro") +
+    					", UF: " + rs.getString("UF") +
+    					", Região: " + rs.getString("regiao") +
+    					", DDD: " + rs.getString("DDD")
+    				);
+    				
+    				// Buscar categorias deste favorito
+    				try (PreparedStatement psCat = conn.prepareStatement(sqlCat)) {
+    					psCat.setInt(1, idFav);
+    					try (ResultSet rsCat = psCat.executeQuery()) {
+    						List<String> cats = new ArrayList<>();
+    						while (rsCat.next()) {
+    							cats.add(rsCat.getString("nome"));
+    						}
+    						if (!cats.isEmpty()) {
+    							System.out.println("  Categorias: " + String.join(", ", cats));
+    						} else {
+    							System.out.println("  Categorias: Nenhuma");
+    						}
+    					}
+    				}
+    			}
+    			if (!encontrou) {
+    				System.out.println("Nenhum favorito encontrado.");
+    			}
+    		}
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
+    }
+    
+    public Favorito buscarFavorito(String codigo, Usuario u) {
+    	String sql = "SELECT * FROM favoritos WHERE codigo = ? AND fk_id_usuario = ?";
+    	Favorito fav = null;
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setString(1, codigo);
+    		ps.setInt(2, u.getId());
+    		
+    		try (ResultSet rs = ps.executeQuery()) {
+    			if (rs.next()) {
+    				fav = new Favorito(
+    					rs.getInt("id_favorito"),
+    					rs.getInt("fk_id_usuario"),
+    					rs.getString("codigo"),
+    					rs.getString("nome")
+    				);
+    			}
+    		}
+    	} catch (SQLException e) {
+    		System.err.println("Erro ao buscar favorito: " + e.getMessage());
+    	}
+    	return fav;
+    }
+    
+    public void excluirFavorito(String codigo, Usuario u) {
+    	String sql = "DELETE FROM favoritos WHERE codigo = ? AND fk_id_usuario = ?";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setString(1, codigo);
+    		ps.setInt(2, u.getId());
+    		ps.execute();
+    		System.out.println("Favorito removido com sucesso!");
+    	} catch (Exception e) {
+    		System.err.println("Erro ao excluir favorito: " + e.getMessage());
+    	}
+    }
+    
+    public void editarNomeFavorito(String codigo, String novoNome, Usuario u) {
+    	String sql = "UPDATE favoritos SET nome = ? WHERE codigo = ? AND fk_id_usuario = ?";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setString(1, novoNome);
+    		ps.setString(2, codigo);
+    		ps.setInt(3, u.getId());
+    		ps.execute();
+    		System.out.println("Nome do favorito atualizado com sucesso!");
+    	} catch (Exception e) {
+    		System.err.println("Erro ao editar favorito: " + e.getMessage());
+    	}
+    }
+    
+    //CRUD CATEGORIAS
+    
+    public void salvarCategoria(String nome, Usuario u) {
+    	String sql = "INSERT INTO categorias (fk_id_usuario, nome) VALUES (?, ?)";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, u.getId());
+    		ps.setString(2, nome);
+    		ps.execute();
+    		System.out.println("Categoria criada com sucesso!");
+    	} catch (Exception e) {
+    		System.err.println("Erro ao criar categoria: " + e.getMessage());
+    	}
+    }
+    
+    public List<Categoria> listarCategorias(Usuario u) {
+    	String sql = "SELECT * FROM categorias WHERE fk_id_usuario = ?";
+    	List<Categoria> lista = new ArrayList<>();
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, u.getId());
+    		
+    		try (ResultSet rs = ps.executeQuery()) {
+    			while (rs.next()) {
+    				Categoria cat = new Categoria(
+    					rs.getInt("id_categoria"),
+    					rs.getInt("fk_id_usuario"),
+    					rs.getString("nome")
+    				);
+    				lista.add(cat);
+    				System.out.println(cat.getId() + " - " + cat.getNome());
+    			}
+    		}
+    		if (lista.isEmpty()) {
+    			System.out.println("Nenhuma categoria cadastrada.");
+    		}
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
+    	return lista;
+    }
+    
+    public Categoria buscarCategoria(int id, Usuario u) {
+    	String sql = "SELECT * FROM categorias WHERE id_categoria = ? AND fk_id_usuario = ?";
+    	Categoria cat = null;
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, id);
+    		ps.setInt(2, u.getId());
+    		
+    		try (ResultSet rs = ps.executeQuery()) {
+    			if (rs.next()) {
+    				cat = new Categoria(
+    					rs.getInt("id_categoria"),
+    					rs.getInt("fk_id_usuario"),
+    					rs.getString("nome")
+    				);
+    			}
+    		}
+    	} catch (SQLException e) {
+    		System.err.println("Erro ao buscar categoria: " + e.getMessage());
+    	}
+    	return cat;
+    }
+    
+    public void editarCategoria(int id, String novoNome, Usuario u) {
+    	String sql = "UPDATE categorias SET nome = ? WHERE id_categoria = ? AND fk_id_usuario = ?";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setString(1, novoNome);
+    		ps.setInt(2, id);
+    		ps.setInt(3, u.getId());
+    		ps.execute();
+    		System.out.println("Categoria atualizada com sucesso!");
+    	} catch (Exception e) {
+    		System.err.println("Erro ao editar categoria: " + e.getMessage());
+    	}
+    }
+    
+    public void excluirCategoria(int id, Usuario u) {
+    	String sql = "DELETE FROM categorias WHERE id_categoria = ? AND fk_id_usuario = ?";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, id);
+    		ps.setInt(2, u.getId());
+    		ps.execute();
+    		System.out.println("Categoria excluída com sucesso!");
+    	} catch (Exception e) {
+    		System.err.println("Erro ao excluir categoria: " + e.getMessage());
+    	}
+    }
+    
+    //VINCULO CATEGORIA-FAVORITO
+    
+    public void vincularCategoriaFavorito(int idFavorito, int idCategoria) {
+    	String sql = "INSERT INTO categoria_favoritos (fk_id_favorito, fk_id_categoria) VALUES (?, ?)";
+    	
+    	try (
+    		Connection conn = ConnectionFactory.getConnection();
+    		PreparedStatement ps = conn.prepareStatement(sql)
+    	) {
+    		ps.setInt(1, idFavorito);
+    		ps.setInt(2, idCategoria);
+    		ps.execute();
+    	} catch (Exception e) {
+    		System.err.println("Erro ao vincular categoria: " + e.getMessage());
+    	}
+    }
+    
+}

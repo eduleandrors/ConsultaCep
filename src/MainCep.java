@@ -3,6 +3,8 @@ import java.util.Scanner;
 import repository.Repository;
 import service.CepService;
 import model.Cep;
+import model.Categoria;
+import model.Favorito;
 import model.Usuario;
 import util.Util;
 
@@ -69,10 +71,11 @@ public class MainCep {
 							System.out.println("3 - Pesquisar dentro do histórico");
 							System.out.println("4 - Deletar consulta");
 							System.out.println("5 - Limpar histórico");
+							System.out.println("6 - Favoritos");
 							System.out.println("0 - Sair");
 
 							x = sc.nextLine();
-							if (!x.equals("1") && !x.equals("2") && !x.equals("0") && !x.equals("3") && !x.equals("4") && !x.equals("5")) {
+							if (!x.equals("1") && !x.equals("2") && !x.equals("0") && !x.equals("3") && !x.equals("4") && !x.equals("5") && !x.equals("6")) {
 								System.out.println("Valor inválido, tente novamente");
 								op = 1;
 							} else {
@@ -182,10 +185,163 @@ public class MainCep {
 								
 								case '5':
 									repo.limparHistórico(logado);
-									break;
-								case '0':
-									System.out.println("Retornando a tela de login");
-									break;
+								break;
+							case '6':
+								char opFav;
+								do {
+									System.out.println("\n=== Favoritos ===");
+									System.out.println("1 - Listar favoritos");
+									System.out.println("2 - Adicionar favorito");
+									System.out.println("3 - Excluir favorito");
+									System.out.println("4 - Editar nome de favorito");
+									System.out.println("5 - Criar categoria");
+									System.out.println("6 - Listar categorias");
+									System.out.println("7 - Editar categoria");
+									System.out.println("8 - Excluir categoria");
+									System.out.println("0 - Voltar");
+
+									String entradaFav = sc.nextLine();
+									if (entradaFav.length() != 1 || "012345678".indexOf(entradaFav.charAt(0)) == -1) {
+										System.out.println("Valor inválido, tente novamente");
+										opFav = 1;
+									} else {
+										opFav = entradaFav.charAt(0);
+										switch (opFav) {
+										case '1': // Listar favoritos
+											repo.listarFavoritos(logado);
+											break;
+
+										case '2': // Adicionar favorito
+											System.out.print("Digite o código do CEP para favoritar: ");
+											String cepFav = sc.nextLine();
+
+											Cep cepExiste = repo.buscar(cepFav, logado);
+											if (cepExiste == null) {
+												System.out.println("CEP não encontrado no seu histórico. Consulte primeiro.");
+												break;
+											}
+
+											Favorito favExiste = repo.buscarFavorito(cepFav, logado);
+											if (favExiste != null) {
+												System.out.println("Este CEP já está nos seus favoritos.");
+												break;
+											}
+
+											System.out.print("Digite um nome para este favorito: ");
+											String nomeFav = sc.nextLine();
+
+											repo.salvarFavorito(cepFav, nomeFav, logado);
+
+											// Vincular a categorias
+											List<Categoria> cats = repo.listarCategorias(logado);
+											if (!cats.isEmpty()) {
+												System.out.println("Deseja vincular a alguma categoria? (Digite os IDs separados por vírgula, ou 0 para pular)");
+												String idsCat = sc.nextLine();
+												if (!idsCat.equals("0")) {
+													Favorito novoFav = repo.buscarFavorito(cepFav, logado);
+													if (novoFav != null) {
+														String[] ids = idsCat.split(",");
+														for (String idStr : ids) {
+															try {
+																int idCat = Integer.parseInt(idStr.trim());
+																Categoria catExiste = repo.buscarCategoria(idCat, logado);
+																if (catExiste != null) {
+																	repo.vincularCategoriaFavorito(novoFav.getId(), idCat);
+																	System.out.println("Vinculado à categoria: " + catExiste.getNome());
+																} else {
+																	System.out.println("Categoria ID " + idCat + " não encontrada.");
+																}
+															} catch (NumberFormatException ex) {
+																System.out.println("ID inválido: " + idStr.trim());
+															}
+														}
+													}
+												}
+											}
+											break;
+
+										case '3': // Excluir favorito
+											repo.listarFavoritos(logado);
+											System.out.print("Digite o código do CEP para remover dos favoritos: ");
+											String cepExcluir = sc.nextLine();
+											Favorito favExcluir = repo.buscarFavorito(cepExcluir, logado);
+											if (favExcluir != null) {
+												repo.excluirFavorito(cepExcluir, logado);
+											} else {
+												System.out.println("Favorito não encontrado.");
+											}
+											break;
+
+										case '4': // Editar nome de favorito
+											repo.listarFavoritos(logado);
+											System.out.print("Digite o código do CEP do favorito para editar: ");
+											String cepEditar = sc.nextLine();
+											Favorito favEditar = repo.buscarFavorito(cepEditar, logado);
+											if (favEditar != null) {
+												System.out.print("Digite o novo nome: ");
+												String novoNomeFav = sc.nextLine();
+												repo.editarNomeFavorito(cepEditar, novoNomeFav, logado);
+											} else {
+												System.out.println("Favorito não encontrado.");
+											}
+											break;
+
+										case '5': // Criar categoria
+											System.out.print("Digite o nome da nova categoria: ");
+											String nomeCat = sc.nextLine();
+											repo.salvarCategoria(nomeCat, logado);
+											break;
+
+										case '6': // Listar categorias
+											repo.listarCategorias(logado);
+											break;
+
+										case '7': // Editar categoria
+											repo.listarCategorias(logado);
+											System.out.print("Digite o ID da categoria para editar: ");
+											String idEditStr = sc.nextLine();
+											try {
+												int idEdit = Integer.parseInt(idEditStr);
+												Categoria catEdit = repo.buscarCategoria(idEdit, logado);
+												if (catEdit != null) {
+													System.out.print("Digite o novo nome: ");
+													String novoNomeCat = sc.nextLine();
+													repo.editarCategoria(idEdit, novoNomeCat, logado);
+												} else {
+													System.out.println("Categoria não encontrada.");
+												}
+											} catch (NumberFormatException ex) {
+												System.out.println("ID inválido.");
+											}
+											break;
+
+										case '8': // Excluir categoria
+											repo.listarCategorias(logado);
+											System.out.print("Digite o ID da categoria para excluir: ");
+											String idExcStr = sc.nextLine();
+											try {
+												int idExc = Integer.parseInt(idExcStr);
+												Categoria catExc = repo.buscarCategoria(idExc, logado);
+												if (catExc != null) {
+													repo.excluirCategoria(idExc, logado);
+												} else {
+													System.out.println("Categoria não encontrada.");
+												}
+											} catch (NumberFormatException ex) {
+												System.out.println("ID inválido.");
+											}
+											break;
+
+										case '0':
+											System.out.println("Voltando ao menu principal");
+											break;
+										}
+									}
+								} while (opFav != '0');
+								break;
+							case '0':
+								System.out.println("Retornando a tela de login");
+								break;
 								}
 							}
 						} while (op != '0');
