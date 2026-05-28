@@ -27,7 +27,7 @@ public class MainCep {
 		String x, y, ultimoEndereco = "";
 		boolean existe = false;
 		Cep ultimo = null;
-		int max = 20, maxh = 15, opL;
+		int max = 5, maxh = 15, opL;
 		LocalDateTime horario;
 		Usuario logado = null;
 		List<Cep> lista = null;
@@ -159,32 +159,6 @@ public class MainCep {
 								        break;
 								    }
 
-								    List<Cep> dadosBanco = repo.buscarPorEndereco(uf, cidade, logradouro, logado);
-
-								    if (!dadosBanco.isEmpty()) {
-
-								        System.out.println(
-								            "Resultados encontrados no histórico:");
-
-								        for (Cep c : dadosBanco) {
-
-								            repo.atualizar(c.getCodigo(), logado);
-
-								            System.out.println(
-								                "Cidade: " + c.getCidade() +
-								                ", Estado: " + c.getEstado() +
-								                ", Logradouro: " + c.getLogradouro() +
-								                ", Complemento: " + c.getComplemento() +
-								                ", Bairro: " + c.getBairro() +
-								                ", UF: " + c.getUF() +
-								                ", Região: " + c.getRegiao() +
-								                ", DDD: " + c.getDDD()
-								            );
-								            repo.atualizarContador(logado);
-								        }
-
-								    } else {
-
 								        List<Cep> resultados =
 								            service.buscarPorEndereco(
 								                uf, cidade, logradouro);
@@ -210,6 +184,7 @@ public class MainCep {
 								                }
 
 								                System.out.println(
+								                	"Cep: " + c.getCodigo() +
 								                    "Cidade: " + c.getCidade() +
 								                    ", Estado: " + c.getEstado() +
 								                    ", Logradouro: " + c.getLogradouro() +
@@ -223,7 +198,7 @@ public class MainCep {
 
 								            repo.atualizarContador(logado);;
 								        }
-								    }
+								    
 								    ultimoEndereco = pesquisaAtual;
 
 								    break;

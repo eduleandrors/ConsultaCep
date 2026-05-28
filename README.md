@@ -2,12 +2,58 @@ create database Via_Cep character set utf8mb4 collate utf8mb4_unicode_ci;
 
 use Via_Cep;
 
-create table usuario ( id_usuario INT NOT NULL AUTO_INCREMENT, nome varchar(100) not null, email varchar(257) not null unique, senha varchar(100) not null, dataCriacao timestamp, cont int, PRIMARY KEY (id_usuario) );
+create table usuario (
+  id_usuario INT NOT NULL AUTO_INCREMENT,
+  nome varchar(100) not null,
+  email varchar(257) not null unique,
+  senha varchar(100) not null,
+  dataCriacao timestamp,
+  PRIMARY KEY (id_usuario)
+);
 
-create table cep ( fk_id_usuario INT NOT NULL, codigo char(8) NOT NULL, cidade varchar(100), estado varchar(100), logradouro varchar(100), complemento varchar(100), bairro varchar(100), UF char(2), regiao varchar(100), DDD varchar(3), cont int DEFAULT 1, horario timestamp, CONSTRAINT fk_cep_usuario FOREIGN KEY (fk_id_usuario) REFERENCES usuario(id_usuario), PRIMARY KEY (fk_id_usuario, codigo) );
+create table cep (
+  fk_id_usuario INT NOT NULL,
+  codigo char(8) NOT NULL,
+  cidade varchar(100),
+  estado varchar(100),
+  logradouro varchar(100),
+  complemento varchar(100),
+  bairro varchar(100),
+  UF char(2),
+  regiao varchar(100),
+  DDD varchar(3),
+  cont int DEFAULT 1,
+  horario timestamp,
+  CONSTRAINT fk_cep_usuario FOREIGN KEY (fk_id_usuario) REFERENCES usuario(id_usuario),
+  PRIMARY KEY (fk_id_usuario, codigo)
+);
 
-create table categorias ( id_categoria INT NOT NULL AUTO_INCREMENT, fk_id_usuario int not null, nome varchar(100) not null, CONSTRAINT fk_categoria_usuario FOREIGN KEY (fk_id_usuario) REFERENCES usuario(id_usuario), CONSTRAINT uq_usuario_categoria UNIQUE (fk_id_usuario, nome), PRIMARY KEY (id_categoria) );
+create table categorias (
+  id_categoria INT NOT NULL AUTO_INCREMENT,
+  fk_id_usuario int not null,
+  nome varchar(100) not null,
+  CONSTRAINT fk_categoria_usuario FOREIGN KEY (fk_id_usuario) REFERENCES usuario(id_usuario),
+  CONSTRAINT uq_usuario_categoria UNIQUE (fk_id_usuario, nome),
+  PRIMARY KEY (id_categoria)
+);
 
-create table favoritos ( id_favorito int NOT NULL AUTO_INCREMENT, fk_id_usuario INT NOT NULL, codigo char(8) NOT NULL, nome varchar(100), CONSTRAINT uq_usuario_codigo UNIQUE (fk_id_usuario, codigo), CONSTRAINT fk_favoritos_cep FOREIGN KEY (fk_id_usuario, codigo) REFERENCES cep(fk_id_usuario, codigo) ON DELETE CASCADE, PRIMARY KEY (id_favorito) );
+create table favoritos (
+  id_favorito int NOT NULL AUTO_INCREMENT,
+  fk_id_usuario INT NOT NULL,
+  codigo char(8) NOT NULL,
+  nome varchar(100),
+  CONSTRAINT uq_usuario_codigo UNIQUE (fk_id_usuario, codigo),
+  CONSTRAINT fk_favoritos_cep FOREIGN KEY (fk_id_usuario, codigo)
+    REFERENCES cep(fk_id_usuario, codigo) ON DELETE CASCADE,
+  PRIMARY KEY (id_favorito)
+);
 
-create table categoria_favoritos ( fk_id_favorito int NOT NULL, fk_id_categoria int NOT NULL, CONSTRAINT fk_cat_fav_favorito FOREIGN KEY (fk_id_favorito) REFERENCES favoritos(id_favorito) ON DELETE CASCADE, CONSTRAINT fk_cat_fav_categoria FOREIGN KEY (fk_id_categoria) REFERENCES categorias(id_categoria) ON DELETE CASCADE, PRIMARY KEY (fk_id_favorito, fk_id_categoria) );
+create table categoria_favoritos (
+  fk_id_favorito int NOT NULL,
+  fk_id_categoria int NOT NULL,
+  CONSTRAINT fk_cat_fav_favorito FOREIGN KEY (fk_id_favorito)
+    REFERENCES favoritos(id_favorito) ON DELETE CASCADE,
+  CONSTRAINT fk_cat_fav_categoria FOREIGN KEY (fk_id_categoria)
+    REFERENCES categorias(id_categoria) ON DELETE CASCADE,
+  PRIMARY KEY (fk_id_favorito, fk_id_categoria)
+);

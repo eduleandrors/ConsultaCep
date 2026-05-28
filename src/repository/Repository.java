@@ -83,54 +83,6 @@ public class Repository {
         return ultimo;
     }
     
-    public List<Cep> buscarPorEndereco(String uf, String cidade, String logradouro, Usuario u) {
-
-        String sql = "SELECT * FROM cep " +
-                     "WHERE fk_id_usuario = ? " +
-                     "AND UF = ? " +
-                     "AND cidade LIKE ? " +
-                     "AND logradouro LIKE ?";
-
-        List<Cep> lista = new ArrayList<>();
-
-        try (
-            Connection conn = ConnectionFactory.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-        ) {
-
-            ps.setInt(1, u.getId());
-            ps.setString(2, uf);
-            ps.setString(3, "%" + cidade + "%");
-            ps.setString(4, "%" + logradouro + "%");
-
-            try (ResultSet rs = ps.executeQuery()) {
-
-                while (rs.next()) {
-
-                    Cep cep = new Cep(
-                        rs.getString("codigo"),
-                        rs.getString("cidade"),
-                        rs.getString("estado"),
-                        rs.getString("logradouro"),
-                        rs.getString("complemento"),
-                        rs.getString("bairro"),
-                        rs.getString("UF"),
-                        rs.getString("regiao"),
-                        rs.getString("DDD"),
-                        rs.getInt("cont"),
-                        rs.getTimestamp("horario")
-                    );
-
-                    lista.add(cep);
-                }
-            }
-
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar endereço: " + e.getMessage());
-        }
-
-        return lista;
-    }
     
     public void listar(int op, Usuario u) {
     	String sql = "";
