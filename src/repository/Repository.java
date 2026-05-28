@@ -356,7 +356,8 @@ public class Repository {
                         rs.getString("nome"),
                         rs.getString("email"),
                         rs.getString("senha"),
-                        rs.getTimestamp("dataCriacao")
+                        rs.getTimestamp("dataCriacao"),
+                        rs.getInt("cont")
                     );
                 }
             }
@@ -370,7 +371,7 @@ public class Repository {
     
     public void Cadastro(Usuario u) {
     	String sql =
-                "INSERT INTO usuario (nome, email, senha, dataCriacao) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+                "INSERT INTO usuario (nome, email, senha, dataCriacao, cont) VALUES (?, ?, ?, CURRENT_TIMESTAMP, 0)";
 
             try (
                 Connection conn = ConnectionFactory.getConnection();
@@ -387,6 +388,50 @@ public class Repository {
                 e.printStackTrace();
             }
             
+    }
+    
+    public void atualizarContador(Usuario u) {
+    	Repository repo = new Repository();
+    	
+    	int cont = repo.ConferirCont(u) + 1;
+    	
+    	String sql =
+                "UPDATE usuario set cont = ? where id_usuario = ?";
+
+            try (
+                Connection conn = ConnectionFactory.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)
+            ) {
+                ps.setInt(1, (cont)); 
+                ps.setInt(2, u.getId());
+
+                ps.execute();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+    }
+    
+    public int ConferirCont (Usuario u)
+    {
+    	int cont = 0;
+    	String sql =
+                "Select cont from usuario where id_usuario = ?";
+    	try (
+                Connection conn = ConnectionFactory.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+            ) {
+                ps.setInt(1, u.getId());
+                try (ResultSet rs = ps.executeQuery()) {
+                	if (rs.next()) {
+                		cont = rs.getInt(1); 
+                }
+                }
+            } catch (SQLException e) {
+                System.err.println("Erro ao buscar contador: " + e.getMessage());
+            }
+                return cont;
     }
     
     public boolean ConferirEmail (String email)
@@ -719,5 +764,55 @@ public class Repository {
     		System.err.println("Erro ao vincular categoria: " + e.getMessage());
     	}
     }
-    
-}
+   
+    // UPDATE USUARIO
+
+    public boolean atualizarUsuario(int id, String nome, String email, String novaSenha) {
+        String sql;
+        if (novaSenha != null && !novaSenha.isEmpty()) {
+            sql = "UPDATE usuario SET nome = ?, email = ?, senha = ? WHERE id_usuario = ?";
+        } else {
+            sql = "UPDATE usuario SET nome = ?, email = ? WHERE id_usuario = ?";
+        }
+        
+        try (
+            Connection conn = ConnectionFactory.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+            ps.setString(1, nome);
+            ps.setString(2, email);
+            
+            if (novaSenha != null && !novaSenha.isEmpty()) {
+                String senhaHash = Util.gerarSHA256(salt + novaSenha + salt);
+                ps.setString(3, senhaHash);
+                ps.setInt(4, id);
+            } else {
+                ps.setInt(3, id);
+            }
+            
+            int linhasAfetadas = ps.executeUpdate();
+            return linhasAfetadas > 0;
+            
+        } catch (Exception e) {
+            System.err.println("Erro ao atualizar usuário: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // DELETE USUARIO
+    public boolean excluirUsuario(int id) {
+        String sql = "DELETE FROM usuario WHERE id_usuario = ?";
+        
+        try (
+            Connection conn = ConnectionFactory.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+            ps.setInt(1, id);
+            int linhasAfetadas = ps.executeUpdate();
+            return linhasAfetadas > 0;
+        } catch (Exception e) {
+            System.err.println("Erro ao excluir usuário: " + e.getMessage());
+            return false;
+        }
+    }
+}

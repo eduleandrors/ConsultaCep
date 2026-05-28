@@ -27,7 +27,7 @@ public class MainCep {
 		String x, y, ultimoEndereco = "";
 		boolean existe = false;
 		Cep ultimo = null;
-		int max = 20, cont = 0, maxh = 15, opL;
+		int max = 20, maxh = 15, opL;
 		LocalDateTime horario;
 		Usuario logado = null;
 		List<Cep> lista = null;
@@ -73,10 +73,12 @@ public class MainCep {
 							System.out.println("5 - Deletar consulta");
 							System.out.println("6 - Limpar histórico");
 							System.out.println("7 - Favoritos");
+							System.out.println("8 - Editar Perfil");
+							System.out.println("9 - Excluir Conta");
 							System.out.println("0 - Sair");
 
 							x = sc.nextLine();
-							if (!x.equals("1") && !x.equals("2") && !x.equals("0") && !x.equals("3") && !x.equals("4") && !x.equals("5") && !x.equals("6") && !x.equals("7")) {
+							if (!x.equals("1") && !x.equals("2") && !x.equals("0") && !x.equals("3") && !x.equals("4") && !x.equals("5") && !x.equals("6") && !x.equals("7") && !x.equals("8") && !x.equals("9")) {
 								System.out.println("Valor inválido, tente novamente");
 								op = 1;
 							} else {
@@ -87,7 +89,7 @@ public class MainCep {
 								    System.out.print("Digite o CEP: ");
 								    String cep = sc.nextLine();
 								    
-								    if (cont < max) {
+								    if (repo.ConferirCont(logado) < max) {
 								        if (cep.length() != 8 || !cep.chars().allMatch(Character::isDigit)) {
 								            System.out.println("Digite um Cep válido de 8 numeros");
 								            break;
@@ -109,7 +111,7 @@ public class MainCep {
 								                        + ", Logradouro: " + c.getLogradouro() + ", Complemento: " + c.getComplemento()
 								                        + ", Bairro: " + c.getBairro() + ", UF: " + c.getUF() + ", Região: "
 								                        + c.getRegiao() + ", DDD: " + c.getDDD());
-								                cont=repo.cont(logado);
+								                repo.atualizarContador(logado);
 								            } else {
 								                System.out.println("Cep inexistente");
 								            }
@@ -121,6 +123,7 @@ public class MainCep {
 								                        + ", Logradouro: " + noBanco.getLogradouro() + ", Complemento: " + noBanco.getComplemento()
 								                        + ", Bairro: " + noBanco.getBairro() + ", UF: " + noBanco.getUF() + ", Região: "
 								                        + noBanco.getRegiao() + ", DDD: " + noBanco.getDDD());
+								                repo.atualizarContador(logado);
 								            }
 								        }
 								    } else {
@@ -138,7 +141,7 @@ public class MainCep {
 								    System.out.print("Logradouro: ");
 								    String logradouro = sc.nextLine();
 
-								    if (cont >= max) {
+								    if (repo.ConferirCont(logado) >= max) {
 								        System.out.println("Máximo de consultas atingido.");
 								        break;
 								    }
@@ -177,6 +180,7 @@ public class MainCep {
 								                ", Região: " + c.getRegiao() +
 								                ", DDD: " + c.getDDD()
 								            );
+								            repo.atualizarContador(logado);
 								        }
 
 								    } else {
@@ -217,7 +221,7 @@ public class MainCep {
 								                );
 								            }
 
-								            cont = repo.cont(logado);
+								            repo.atualizarContador(logado);;
 								        }
 								    }
 								    ultimoEndereco = pesquisaAtual;
@@ -239,7 +243,7 @@ public class MainCep {
 								        repo.listar(opL, logado);
 								    }
 								    
-								    System.out.println("Foram feitas " + repo.cont(logado)+ " consultas bem sucedidas.");
+								    System.out.println("Foram feitas " + repo.ConferirCont(logado)+ " consultas bem sucedidas.");
 								    ultimo = repo.ultimo(logado);
 								    if (ultimo != null) {
 								        System.out.println("A ultima consulta feita foi pelo CEP " + ultimo.getCodigo() + " de "
@@ -457,6 +461,73 @@ public class MainCep {
 									}
 								} while (opFav != '0');
 								break;
+							
+							case '8':
+								System.out.println("=== Editar Perfil ===");
+								System.out.println("Deixe em branco para manter o valor atual.");
+								
+								System.out.print("Novo nome (" + logado.getNome() + "): ");
+								String novoNome = sc.nextLine();
+								if (novoNome.trim().isEmpty()) {
+									novoNome = logado.getNome();
+								}
+								
+								System.out.print("Novo email (" + logado.getEmail() + "): ");
+								String novoEmail = sc.nextLine();
+								if (novoEmail.trim().isEmpty()) {
+									novoEmail = logado.getEmail();
+								}
+								
+								if (!novoEmail.equals(logado.getEmail()) && repo.ConferirEmail(novoEmail)) {
+									System.out.println("Este email já está cadastrado por outro usuário.");
+									break;
+								}
+								
+								System.out.print("Nova senha (deixe em branco para manter): ");
+								String novaSenha = sc.nextLine();
+								
+								boolean atualizado = repo.atualizarUsuario(logado.getId(), novoNome, novoEmail, novaSenha);
+								
+								if (atualizado) {
+									logado.setNome(novoNome);
+									logado.setEmail(novoEmail);
+									System.out.println("Perfil atualizado com sucesso!");
+								} else {
+									System.out.println("Erro ao atualizar perfil.");
+								}
+								break;
+							
+							case '9':
+								System.out.println("=== EXCLUIR CONTA ===");
+								System.out.println("ATENÇÃO: Todos os seus dados serão perdidos!");
+								System.out.print("Confirme sua senha para excluir a conta: ");
+								String senhaConfirma = sc.nextLine();
+								
+								try {
+									String senhaHash = util.Util.gerarSHA256("svl12j" + senhaConfirma + "svl12j");
+									if (senhaHash.equals(logado.getSenha())) {
+										System.out.print("Tem certeza? (s/n): ");
+										String confirma = sc.nextLine();
+										if (confirma.equalsIgnoreCase("s")) {
+											boolean excluido = repo.excluirUsuario(logado.getId());
+											if (excluido) {
+												System.out.println("Conta excluída com sucesso.");
+												logado = null;
+												op = '0';
+											} else {
+												System.out.println("Erro ao excluir conta.");
+											}
+										} else {
+											System.out.println("Exclusão cancelada.");
+										}
+									} else {
+										System.out.println("Senha incorreta!");
+									}
+								} catch (Exception e) {
+									System.out.println("Erro ao verificar senha.");
+								}
+								break;
+								
 							case '0':
 								System.out.println("Retornando a tela de login");
 								break;
@@ -489,7 +560,7 @@ public class MainCep {
 					}
 					else
 					{
-						Usuario u = new Usuario (-1, nomeu, emailu, senhau,Timestamp.from(Instant.now()));
+						Usuario u = new Usuario (-1, nomeu, emailu, senhau,Timestamp.from(Instant.now()), 0);
 						repo.Cadastro(u);
 						System.out.println("Cadastro concluido! Seja bem-vindo(a)");
 					}
