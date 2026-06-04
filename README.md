@@ -8,6 +8,7 @@ create table usuario (
   email varchar(257) not null unique,
   senha varchar(100) not null,
   dataCriacao timestamp,
+  cont int,
   PRIMARY KEY (id_usuario)
 );
 
